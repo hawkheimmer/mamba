@@ -27,6 +27,9 @@ try:
 except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
+from torchinfo import summary
+import onnx
+
 
 class Mamba(nn.Module):
     def __init__(
@@ -292,3 +295,13 @@ class Mamba(nn.Module):
                 conv_state.zero_()
                 ssm_state.zero_()
         return conv_state, ssm_state
+
+
+model = Mamba(d_model=512).to("cuda")
+print(model)
+summary(model, input_size=(2, 64, 512))
+
+torch.onnx.export(model, torch.randn(2, 64, 512).to("cuda"), "mamba_simple.onnx", verbose=True)
+
+onnx_model = onnx.load("mamba_simple.onnx")
+onnx.checker.check_model(onnx_model)
